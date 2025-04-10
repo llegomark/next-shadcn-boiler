@@ -687,16 +687,21 @@ const PPSSHRaschAssessment = () => {
           <Tabs defaultValue="domain1" value={activeDomain} onValueChange={setActiveDomain} className="w-full">
             <TabsList className="w-full grid grid-cols-5 rounded-none border-b-4 border-black bg-gray-100 h-16">
               {domains.map((domain, index) => {
-                const domainName = domain.name.split(' ')[0];
+                let bgColor = "bg-blue-400";
+                
+                if (domain.id === "domain1") bgColor = "bg-red-400";
+                else if (domain.id === "domain2") bgColor = "bg-blue-400";
+                else if (domain.id === "domain3") bgColor = "bg-green-400";
+                else if (domain.id === "domain4") bgColor = "bg-purple-400";
+                else if (domain.id === "domain5") bgColor = "bg-orange-400";
+                
                 return (
                   <TabsTrigger 
                     key={domain.id} 
                     value={domain.id}
-                    className={`w-full text-sm sm:text-base font-bold data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:text-black data-[state=active]:${
-                      ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][index]
-                    }`}
+                    className={`w-full text-sm sm:text-base font-bold data-[state=active]:${bgColor} data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:text-black`}
                   >
-                    {domainName}
+                    {domain.name.split(' ')[0]}
                   </TabsTrigger>
                 );
               })}
@@ -1189,6 +1194,19 @@ const PPSSHRaschAssessment = () => {
           
           <CardFooter className="flex flex-col sm:flex-row justify-center gap-3 p-5 bg-gray-100 border-t-4 border-black">
             <Button 
+              onClick={() => {
+                setAnswers({});
+                setProgress(0);
+                setResults(null);
+                setRaschMeasures(null);
+                setReliabilityStats(null);
+                setCurrentPage("landing");
+              }}
+              className="font-bold border-3 border-black bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              Back to Home
+            </Button>
+            <Button 
               variant="outline" 
               className="font-bold border-3 border-black bg-white hover:bg-gray-100"
               onClick={resetAssessment}
@@ -1197,7 +1215,7 @@ const PPSSHRaschAssessment = () => {
             </Button>
             <Button 
               onClick={() => window.print()} 
-              className="font-bold border-3 border-black bg-blue-500 hover:bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="font-bold border-3 border-black bg-blue-500 hover:bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white"
             >
               Print Results
             </Button>
