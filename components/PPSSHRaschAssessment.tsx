@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, HelpCircle } from "lucide-react";
+import { Info, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, BarChart3, PieChart } from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -286,10 +286,21 @@ const raschUtils = {
   },
   
   // Calculate standard error of measurement
-  calculateSEM: (rawScore, maxScore) => {
-    // Simple SEM estimation - in real Rasch analysis this would be more complex
-    const p = rawScore / maxScore;
-    return 1 / Math.sqrt(maxScore * p * (1 - p));
+  calculateSEM: (personAbility, strandDifficulties) => {
+    // Calculate information as sum of P * (1 - P) for each item
+    let information = 0;
+    
+    for (const difficulty of strandDifficulties) {
+      // Calculate probability of success using Rasch model
+      const exponent = personAbility - difficulty;
+      const probability = Math.exp(exponent) / (1 + Math.exp(exponent));
+      
+      // Add this item's information
+      information += probability * (1 - probability);
+    }
+    
+    // SEM = 1 / sqrt(Information)
+    return information > 0 ? 1 / Math.sqrt(information) : 1; // Avoid division by zero
   },
   
   // Calculate person reliability (simplified)
@@ -363,8 +374,9 @@ const PPSSHRaschAssessment = () => {
       // Convert raw score to logit measure using Rasch transformation
       const logitMeasure = raschUtils.rawScoreToLogit(rawScore, maxPossibleScore);
       
-      // Calculate standard error of measurement
-      const sem = raschUtils.calculateSEM(rawScore, maxPossibleScore);
+      // Calculate standard error of measurement using item information
+      const strandDifficulties = domain.strands.map(strand => strand.difficulty);
+      const sem = raschUtils.calculateSEM(logitMeasure, strandDifficulties);
       
       // Calculate confidence interval (95%)
       const confidenceInterval = {
@@ -409,7 +421,8 @@ const PPSSHRaschAssessment = () => {
     const personVariance = measures.reduce((acc, m) => acc + Math.pow(m - meanMeasure, 2), 0) / measures.length;
     const errorVariance = domainResults.reduce((acc, d) => acc + Math.pow(d.standardError, 2), 0) / domainResults.length;
     
-    // Calculate reliability
+    // Calculate cross-domain consistency index (not a true Person Separation Reliability,
+    // but an indicator of this person's consistency across domains relative to measurement error)
     const reliability = raschUtils.calculateReliability(personVariance, errorVariance);
     
     // Determine career stage based on overall logit measure
@@ -552,61 +565,92 @@ const PPSSHRaschAssessment = () => {
 
   // Render landing page
   const renderLandingPage = () => (
-    <div className="flex flex-col items-center justify-center p-4 md:p-8 bg-slate-50">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="text-center bg-blue-600 text-white rounded-t-lg">
-          <CardTitle className="text-xl md:text-3xl font-bold">Philippine Professional Standards for School Heads</CardTitle>
-          <CardDescription className="text-white/90 text-sm md:text-lg">Leadership Assessment with Rasch Analysis</CardDescription>
+    <div className="flex flex-col items-center p-4 sm:p-6 mx-auto max-w-3xl">
+      <Card className="w-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+        <CardHeader className="bg-yellow-400 text-black border-b-4 border-black p-6">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="text-2xl sm:text-3xl font-black leading-tight">Philippine Professional Standards for School Heads</CardTitle>
+            <CardDescription className="text-black font-medium text-base">Leadership Assessment with Psychometric Algorithm</CardDescription>
+            <div className="text-black text-sm font-bold mt-2 border-t-2 border-black pt-2">
+              by Mark Anthony Llego | <a href="https://nqesh.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">nqesh.com</a>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="p-4 md:p-8">
-          <div className="space-y-4 md:space-y-6">
+        
+        <CardContent className="p-6 bg-white">
+          <div className="space-y-6">
+          <div className="rounded-md bg-blue-100 border-4 border-blue-500 p-4 mb-6">
+            <h2 className="text-xl font-black text-blue-800 mb-2">Welcome to the Advanced PPSSH Assessment</h2>
+            <p className="text-black font-medium">
+              This assessment tool applies Rasch measurement principles to evaluate your leadership competencies based on the Philippine Professional Standards for School Heads (PPSSH).
+            </p>
+          </div>
+            
+            <div className="border-4 border-black bg-pink-300 p-4 rounded-md mb-6">
+              <div className="flex gap-3 items-start">
+                <Info className="h-6 w-6 flex-shrink-0 mt-1" strokeWidth={2.5} />
+                <div>
+                  <h3 className="text-lg font-black mb-1 text-black">Enhanced with Advanced Psychometrics</h3>
+                  <p className="text-black font-medium">
+                    This assessment uses proprietary psychometric algorithms to provide more precise estimates of your abilities across the PPSSH domains, with confidence intervals and probability-based feedback.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div>
-              <h2 className="text-lg md:text-xl font-semibold text-slate-800 mb-2">Welcome to the Advanced PPSSH Assessment</h2>
-              <p className="text-sm md:text-base text-slate-600 mb-4">
-                This assessment tool applies Rasch measurement principles to evaluate your leadership competencies based on the Philippine Professional Standards for School Heads (PPSSH).
-              </p>
-              
-              <Alert className="mb-6">
-                <Info className="h-4 w-4 md:h-5 md:w-5" />
-                <AlertTitle>Enhanced with Rasch Analysis</AlertTitle>
-                <AlertDescription className="text-sm">
-                  This assessment uses Rasch measurement to provide more precise estimates of your abilities across the PPSSH domains, with confidence intervals and probability-based feedback.
-                </AlertDescription>
-              </Alert>
-              
-              <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-2">The Five Domains of PPSSH:</h3>
-              <ul className="space-y-2 mb-6">
-                {domains.map(domain => (
-                  <li key={domain.id} className="flex items-start">
-                    <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 font-semibold text-xs md:text-sm">
+              <h3 className="text-lg font-black mb-3 inline-block bg-green-300 px-3 py-1 -rotate-1 border-2 border-black">The Five Domains of PPSSH:</h3>
+              <ul className="space-y-4 mb-6">
+                {domains.map((domain, index) => (
+                  <li key={domain.id} className="flex items-start gap-3">
+                    <div className={`h-8 w-8 rounded-md border-2 border-black flex items-center justify-center text-lg font-black ${
+                      ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][index]
+                    }`}>
                       {domain.id.replace('domain', '')}
                     </div>
-                    <div>
-                      <span className="font-medium text-sm md:text-base text-slate-800">{domain.name}</span>
-                      <p className="text-xs md:text-sm text-slate-600">{domain.description}</p>
+                    <div className="flex-1">
+                      <span className="font-bold text-base">{domain.name}</span>
+                      <p className="text-sm mt-1">{domain.description}</p>
                     </div>
                   </li>
                 ))}
               </ul>
-              
-              <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-2">Benefits of This Assessment:</h3>
-              <ul className="list-disc list-inside space-y-1 text-xs md:text-sm text-slate-600 mb-6">
-                <li>More precise measurement of your leadership abilities</li>
-                <li>Domain-specific analysis with confidence intervals</li>
-                <li>Probabilistic estimates of your competencies</li>
-                <li>Targeted recommendations based on item difficulties</li>
-                <li>Visual representations of your standing relative to leadership standards</li>
+            </div>
+            
+            <div className="border-4 border-black p-4 bg-cyan-100 rotate-1">
+              <h3 className="text-lg font-black mb-2">Benefits of This Assessment:</h3>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white">✓</div>
+                  <span>Precise leadership measurement</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white">✓</div>
+                  <span>Domain-specific analysis</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white">✓</div>
+                  <span>Probabilistic competency estimates</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white">✓</div>
+                  <span>Targeted recommendations</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white">✓</div>
+                  <span>Visual leadership mapping</span>
+                </li>
               </ul>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-center p-4 md:p-6 bg-slate-50">
+        
+        <CardFooter className="p-6 bg-gray-100 border-t-4 border-black">
           <Button 
-            size="lg" 
-            className="bg-blue-600 hover:bg-blue-700 text-base md:text-lg px-6 md:px-8"
             onClick={() => setCurrentPage("assessment")}
+            className="w-full py-6 text-lg font-black bg-black hover:bg-gray-800 border-4 border-black transform hover:-translate-y-1 transition-transform"
           >
-            Start Assessment
+            START ASSESSMENT
           </Button>
         </CardFooter>
       </Card>
@@ -615,115 +659,146 @@ const PPSSHRaschAssessment = () => {
 
   // Render assessment page
   const renderAssessmentPage = () => (
-    <div className="flex flex-col items-center justify-center p-4 bg-slate-50">
-      <Card className="w-full max-w-4xl mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">PPSSH Leadership Assessment</CardTitle>
-          <CardDescription className="text-xs md:text-sm">
-            Rate yourself on each indicator based on your current knowledge and practice
-          </CardDescription>
-          <div className="mt-2">
-            <div className="flex justify-between text-xs md:text-sm text-slate-500 mb-1">
-              <span>Progress</span>
-              <span>{Math.round(progress)}%</span>
+    <div className="flex flex-col items-center p-4 sm:p-6 mx-auto max-w-3xl">
+      <Card className="w-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-8">
+        <CardHeader className="p-5 border-b-4 border-black bg-orange-400">
+          <div className="flex flex-col gap-3">
+            <CardTitle className="text-xl font-black">PPSSH Leadership Assessment</CardTitle>
+            <CardDescription className="text-black font-medium">
+              Rate yourself on each indicator based on your current knowledge and practice
+            </CardDescription>
+            
+            <div className="mt-2">
+              <div className="flex justify-between text-sm font-medium mb-2">
+                <span>Progress</span>
+                <span className="font-bold">{Math.round(progress)}%</span>
+              </div>
+              <div className="h-8 w-full bg-white border-3 border-black rounded-md overflow-hidden">
+                <div 
+                  className="h-full bg-green-500" 
+                  style={{ width: `${progress}%`, transition: 'width 0.3s ease-in-out' }}
+                ></div>
+              </div>
             </div>
-            <Progress value={progress} className="h-2" />
           </div>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="domain1" value={activeDomain} onValueChange={setActiveDomain}>
-            <TabsList className="grid grid-cols-5 mb-4 md:mb-6">
-              {domains.map(domain => (
-                <TabsTrigger 
-                  key={domain.id} 
-                  value={domain.id}
-                  className="text-xs px-1 md:px-3"
-                >
-                  Domain {domain.id.replace('domain', '')}
-                </TabsTrigger>
-              ))}
+        
+        <CardContent className="p-0">
+          <Tabs defaultValue="domain1" value={activeDomain} onValueChange={setActiveDomain} className="w-full">
+            <TabsList className="w-full grid grid-cols-5 rounded-none border-b-4 border-black bg-gray-100 h-16">
+              {domains.map((domain, index) => {
+                const domainName = domain.name.split(' ')[0];
+                return (
+                  <TabsTrigger 
+                    key={domain.id} 
+                    value={domain.id}
+                    className={`w-full text-sm sm:text-base font-bold data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:text-black data-[state=active]:${
+                      ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][index]
+                    }`}
+                  >
+                    {domainName}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
             
-            {domains.map(domain => (
-              <TabsContent key={domain.id} value={domain.id} className="space-y-4 md:space-y-6">
-                <div>
-                  <h2 className="text-base md:text-xl font-semibold mb-1">{domain.name}</h2>
-                  <p className="text-xs md:text-sm text-slate-600 mb-3 md:mb-4">{domain.description}</p>
+            {domains.map((domain, domainIndex) => (
+              <TabsContent key={domain.id} value={domain.id} className="p-0">
+                <div className="p-5 border-b-4 border-black bg-gray-100">
+                  <h2 className={`text-xl font-black mb-2 inline-block px-3 py-1 ${
+                    ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][domainIndex]
+                  } -rotate-1 border-2 border-black`}>
+                    {domain.name}
+                  </h2>
+                  <p className="text-sm font-medium">{domain.description}</p>
                 </div>
                 
-                <Separator />
-                
-                {domain.strands.map(strand => (
-                  <div key={strand.id} className="rounded-lg border p-3 md:p-4 mb-3 md:mb-4">
-                    <div className="flex items-start justify-between">
-                      <h3 className="font-medium text-sm md:text-lg mb-1">{strand.name}</h3>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center mt-1">
-                              <HelpCircle className="h-4 w-4 text-slate-400" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs text-xs">
-                            <p>Difficulty: {strand.difficulty.toFixed(2)} logits</p>
-                            <p className="mt-1">Higher values indicate more challenging competencies to master.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <p className="text-xs md:text-sm text-slate-600 mb-3 md:mb-4">{strand.indicator}</p>
-                    
-                    <RadioGroup 
-                      value={answers[strand.id]?.toString() || ""} 
-                      onValueChange={(value) => handleRadioChange(strand.id, value)}
-                      className="space-y-1 md:space-y-2"
+                <div className="p-5 space-y-5">
+                  {domain.strands.map((strand, strandIndex) => (
+                    <div 
+                      key={strand.id} 
+                      className={`rounded-md border-3 border-black p-4 ${
+                        ['bg-red-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100'][strandIndex % 5]
+                      } ${strandIndex % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
                     >
-                      <div className="grid grid-cols-1 gap-1 md:gap-2">
-                        {ratingOptions.map(option => (
-                          <div key={option.value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option.value} id={`${strand.id}-${option.value}`} />
-                            <Label htmlFor={`${strand.id}-${option.value}`} className="text-xs md:text-sm">
-                              {option.label}
-                            </Label>
-                          </div>
-                        ))}
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-bold text-lg">{strand.name}</h3>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center h-6 w-6 rounded-full bg-white border-2 border-black">
+                                <HelpCircle className="h-4 w-4" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs bg-black text-white font-medium p-3 border-2 border-black">
+                              <p>Difficulty: {strand.difficulty.toFixed(2)} logits</p>
+                              <p className="mt-1">Higher values indicate more challenging competencies to master.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
-                    </RadioGroup>
-                  </div>
-                ))}
+                      
+                      <p className="text-sm mb-4 font-medium">{strand.indicator}</p>
+                      
+                      <RadioGroup 
+                        value={answers[strand.id]?.toString() || ""} 
+                        onValueChange={(value) => handleRadioChange(strand.id, value)}
+                        className="space-y-1 bg-white border-2 border-black p-3 rounded-md"
+                      >
+                        <div className="grid grid-cols-1 gap-2">
+                          {ratingOptions.map((option, idx) => (
+                            <div key={option.value} className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md">
+                              <RadioGroupItem 
+                                value={option.value} 
+                                id={`${strand.id}-${option.value}`} 
+                                className="h-5 w-5 border-2 border-black"
+                              />
+                              <Label 
+                                htmlFor={`${strand.id}-${option.value}`} 
+                                className="text-sm font-medium cursor-pointer"
+                              >
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  ))}
+                </div>
                 
-                <div className="flex justify-between pt-4">
+                <div className="p-5 bg-gray-100 border-t-4 border-black flex justify-between">
                   {domain.id !== "domain1" && (
                     <Button 
                       variant="outline" 
-                      size="sm"
-                      className="text-xs md:text-sm"
+                      className="font-bold border-3 border-black flex items-center gap-2 bg-white hover:bg-gray-100"
                       onClick={() => {
                         const currentIndex = domains.findIndex(d => d.id === domain.id);
                         setActiveDomain(domains[currentIndex - 1].id);
                       }}
                     >
+                      <ChevronLeft className="h-5 w-5" />
                       Previous Domain
                     </Button>
                   )}
                   {domain.id !== "domain5" ? (
                     <Button 
-                      className="ml-auto text-xs md:text-sm"
-                      size="sm"
+                      className="font-bold border-3 border-black flex items-center gap-2 bg-blue-500 hover:bg-blue-600 ml-auto"
                       onClick={() => {
                         const currentIndex = domains.findIndex(d => d.id === domain.id);
                         setActiveDomain(domains[currentIndex + 1].id);
                       }}
                     >
                       Next Domain
+                      <ChevronRight className="h-5 w-5" />
                     </Button>
                   ) : (
                     <Button 
-                      className="ml-auto bg-green-600 hover:bg-green-700 text-xs md:text-sm"
-                      size="sm"
+                      className="font-bold border-3 border-black flex items-center gap-2 bg-green-500 hover:bg-green-600 ml-auto shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-6"
                       onClick={calculateResults}
                       disabled={Object.keys(answers).length < totalQuestions}
                     >
+                      <CheckCircle2 className="h-5 w-5" />
                       Submit Assessment
                     </Button>
                   )}
@@ -779,151 +854,217 @@ const PPSSHRaschAssessment = () => {
     }));
     
     return (
-      <div className="flex flex-col items-center justify-center p-4 bg-slate-50">
-        <Card className="w-full max-w-4xl mb-8">
-          <CardHeader className="bg-blue-600 text-white rounded-t-lg">
-            <CardTitle className="text-lg md:text-xl">Your PPSSH Assessment Results</CardTitle>
-            <CardDescription className="text-white/90 text-xs md:text-sm">
-              Based on Rasch measurement analysis across all five domains
-            </CardDescription>
+      <div className="flex flex-col items-center p-4 sm:p-6 mx-auto max-w-3xl">
+        <Card className="w-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-8">
+          <CardHeader className="bg-green-400 border-b-4 border-black p-5">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 border-3 border-black rounded-md rotate-6">
+                <CheckCircle2 className="h-10 w-10 text-green-600" strokeWidth={3} />
+              </div>
+              <div>
+                <CardTitle className="text-xl sm:text-2xl font-black">Your PPSSH Results</CardTitle>
+                <CardDescription className="text-black font-medium">
+                  Based on Rasch measurement analysis across all five domains
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           
-          <CardContent className="p-4 md:p-6">
-            <div className="mb-6 md:mb-8">
-              <h2 className="text-lg md:text-xl font-semibold mb-2">{careerStage.title}</h2>
-              <p className="text-xs md:text-sm text-slate-600 mb-3 md:mb-4">{careerStage.description}</p>
-              
-              <div className="bg-blue-50 p-3 md:p-4 rounded-lg mb-6">
-                <h3 className="font-medium text-sm md:text-base mb-2">Overall Assessment</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs md:text-sm text-slate-600">Ability Measure:</p>
-                    <p className="font-semibold text-sm md:text-lg">{results.overallLogitMeasure.toFixed(2)} logits</p>
+          <CardContent className="p-0">
+            <div className="p-5 border-b-4 border-black">
+              <div className="bg-yellow-100 border-3 border-black p-4 rounded-md mb-5 rotate-1">
+                <h2 className="text-xl font-black mb-2">{careerStage.title}</h2>
+                <p className="text-sm font-medium mb-4">{careerStage.description}</p>
+                
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-white border-3 border-black p-3 rounded-md -rotate-2">
+                    <p className="text-xs font-bold mb-1">Ability Measure:</p>
+                    <p className="font-black text-lg">{results.overallLogitMeasure.toFixed(2)} logits</p>
                   </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-slate-600">Reliability:</p>
-                    <p className="font-semibold text-sm md:text-lg">{(reliabilityStats.personReliability * 100).toFixed(1)}%</p>
+                  <div className="bg-white border-3 border-black p-3 rounded-md rotate-2">
+                    <p className="text-xs font-bold mb-1">Reliability:</p>
+                    <p className="font-black text-lg">{(reliabilityStats.personReliability * 100).toFixed(1)}%</p>
                   </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-slate-600">Probability of Stage:</p>
-                    <p className="font-semibold text-sm md:text-lg">{(results.careerStageProb * 100).toFixed(1)}%</p>
+                  <div className="bg-white border-3 border-black p-3 rounded-md -rotate-1">
+                    <p className="text-xs font-bold mb-1">Stage Probability:</p>
+                    <p className="font-black text-lg">{(results.careerStageProb * 100).toFixed(1)}%</p>
                   </div>
                 </div>
               </div>
             </div>
             
-            <Tabs defaultValue="overview" className="mb-6 md:mb-8">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
-                <TabsTrigger value="details" className="text-xs md:text-sm">Domain Details</TabsTrigger>
-                <TabsTrigger value="rasch" className="text-xs md:text-sm">Rasch Analysis</TabsTrigger>
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="w-full grid grid-cols-3 rounded-none border-b-4 border-black bg-gray-100 h-16">
+                <TabsTrigger 
+                  value="overview" 
+                  className="w-full text-sm sm:text-base font-bold data-[state=active]:border-3 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:bg-purple-400 flex items-center justify-center gap-2"
+                >
+                  <PieChart className="h-5 w-5 flex-shrink-0" />
+                  <span>Overview</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="details" 
+                  className="w-full text-sm sm:text-base font-bold data-[state=active]:border-3 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:bg-blue-400 flex items-center justify-center gap-2"
+                >
+                  <BarChart3 className="h-5 w-5 flex-shrink-0" />
+                  <span>Domain Details</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="rasch" 
+                  className="w-full text-sm sm:text-base font-bold data-[state=active]:border-3 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:bg-green-400 flex items-center justify-center gap-2"
+                >
+                  <Info className="h-5 w-5 flex-shrink-0" />
+                  <span>Advanced Analytics</span>
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="overview">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm md:text-base mb-2">Domain Performance</h3>
-                  <div className="h-64 md:h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart outerRadius="75%" data={radarData}>
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="domain" tick={{ fontSize: 12 }} />
-                        <PolarRadiusAxis angle={90} domain={[-2, 3]} />
-                        <Radar
-                          name="Your Ability Level"
-                          dataKey="logitScore"
-                          stroke="#3b82f6"
-                          fill="#3b82f6"
-                          fillOpacity={0.5}
-                        />
-                        <RechartsTooltip />
-                      </RadarChart>
-                    </ResponsiveContainer>
+              <TabsContent value="overview" className="p-5">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black mb-3 inline-block bg-purple-300 px-3 py-1 -rotate-1 border-2 border-black">Domain Performance</h3>
+                    <div className="h-72 border-3 border-black bg-white p-2 rounded-md">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart outerRadius="70%" data={radarData}>
+                          <PolarGrid stroke="#000" strokeWidth={1} />
+                          <PolarAngleAxis dataKey="domain" tick={{ fontSize: 12, fontWeight: 'bold' }} stroke="#000" />
+                          <PolarRadiusAxis angle={90} domain={[-2, 3]} stroke="#000" />
+                          <Radar
+                            name="Your Ability Level"
+                            dataKey="logitScore"
+                            stroke="#000"
+                            strokeWidth={2}
+                            fill="#9333ea"
+                            fillOpacity={0.6}
+                          />
+                          <RechartsTooltip contentStyle={{ border: '3px solid black', borderRadius: '4px', padding: '8px' }} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                   
-                  <h3 className="font-semibold text-sm md:text-base mb-2">Recommendations</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-lg font-black mb-3 inline-block bg-red-300 px-3 py-1 rotate-1 border-2 border-black">Recommendations</h3>
+                  <div className="space-y-5">
                     {recommendations.map((rec, index) => (
-                      <Alert key={index} className="bg-blue-50">
-                        <AlertTitle className="text-xs md:text-sm font-medium">
+                      <div 
+                        key={index} 
+                        className={`border-3 border-black p-4 rounded-md ${index % 2 === 0 ? 'rotate-1 bg-blue-100' : '-rotate-1 bg-green-100'}`}
+                      >
+                        <h4 className="font-black text-base border-b-2 border-black pb-2 mb-3">
                           {rec.domainName} (Measure: {rec.domainMeasure} logits)
-                        </AlertTitle>
-                        <AlertDescription className="space-y-2">
+                        </h4>
+                        <div className="space-y-4">
                           {rec.strands.map((strand, idx) => (
-                            <div key={idx} className="mt-2">
-                              <p className="text-xs font-medium">{strand.strandName}</p>
-                              <p className="text-xs text-slate-600 mb-1">
-                                Probability of success: {strand.probability}% • Difficulty: {strand.difficulty} logits
-                              </p>
-                              <p className="text-xs">{strand.recommendation}</p>
+                            <div key={idx} className="bg-white border-2 border-black p-3 rounded-md">
+                              <p className="font-bold text-sm">{strand.strandName}</p>
+                              <div className="flex items-center gap-2 my-2">
+                                <div className="h-3 w-full bg-gray-200 border border-black rounded-full overflow-hidden">
+                                  <div 
+                                    style={{ width: strand.probability + '%' }} 
+                                    className="h-full bg-green-500"
+                                  ></div>
+                                </div>
+                                <span className="font-bold text-xs">{strand.probability}%</span>
+                              </div>
+                              <p className="text-xs mt-2 font-medium">{strand.recommendation}</p>
                             </div>
                           ))}
-                        </AlertDescription>
-                      </Alert>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               </TabsContent>
               
-              <TabsContent value="details">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm md:text-base mb-2">Domain Measures with Confidence Intervals</h3>
-                  <div className="h-64 md:h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={domainBarData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis domain={[-2, 3]} label={{ value: 'Logit Measure', angle: -90, position: 'insideLeft', style: { fontSize: '12px' } }} />
-                        <RechartsTooltip 
-                          formatter={(value, name) => [value, name]}
-                          labelFormatter={(value) => `Domain: ${value}`}
-                        />
-                        <Legend />
-                        <Bar
-                          dataKey="logitMeasure"
-                          fill="#3b82f6"
-                          name="Logit Measure"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+              <TabsContent value="details" className="p-5">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black mb-3 inline-block bg-blue-300 px-3 py-1 -rotate-1 border-2 border-black">Domain Measures with Confidence Intervals</h3>
+                    <div className="h-72 border-3 border-black bg-white p-2 rounded-md">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={domainBarData}
+                          margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 'bold' }} stroke="#000" />
+                          <YAxis 
+                            domain={[-2, 3]} 
+                            label={{ 
+                              value: 'Logit Measure', 
+                              angle: -90, 
+                              position: 'insideLeft', 
+                              style: { 
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                textAnchor: 'middle'
+                              } 
+                            }} 
+                            stroke="#000"
+                          />
+                          <RechartsTooltip 
+                            formatter={(value, name) => [value, name]}
+                            labelFormatter={(value) => `Domain: ${value}`}
+                            contentStyle={{ border: '3px solid black', borderRadius: '4px', padding: '8px' }}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="logitMeasure"
+                            fill="#2563eb"
+                            stroke="#000"
+                            strokeWidth={2}
+                            name="Logit Measure"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                   
-                  <div className="space-y-4 mt-4">
-                    {results.domainResults.map((domain) => (
-                      <div key={domain.domainId} className="border rounded-lg p-3 md:p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-xs md:text-sm">{domain.domainName}</h4>
-                          <span className="font-semibold text-xs md:text-sm">{domain.logitMeasure.toFixed(2)} ± {domain.standardError.toFixed(2)} logits</span>
+                  <div className="space-y-4 mt-6">
+                    {results.domainResults.map((domain, idx) => (
+                      <div 
+                        key={domain.domainId} 
+                        className={`border-3 border-black p-4 rounded-md ${
+                          ['bg-red-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100'][idx % 5]
+                        } ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
+                      >
+                        <div className="flex justify-between items-center mb-3 border-b-2 border-black pb-2">
+                          <h4 className="font-black text-base">{domain.domainName}</h4>
+                          <span className="font-bold text-sm bg-white px-2 py-1 border-2 border-black rounded-md">
+                            {domain.logitMeasure.toFixed(2)} ± {domain.standardError.toFixed(2)}
+                          </span>
                         </div>
-                        <Progress 
-                          value={((domain.logitMeasure + 2) / 5) * 100} 
-                          className="h-2 mb-2" 
-                        />
-                        <p className="text-xs text-slate-600 mb-2">
+                        
+                        <div className="h-8 w-full bg-white border-2 border-black rounded-md overflow-hidden mb-2">
+                          <div 
+                            className="h-full bg-blue-500" 
+                            style={{ width: `${((domain.logitMeasure + 2) / 5) * 100}%` }}
+                          ></div>
+                        </div>
+                        
+                        <p className="text-xs font-medium mb-4">
                           95% Confidence Interval: {domain.confidenceInterval.lower.toFixed(2)} to {domain.confidenceInterval.upper.toFixed(2)} logits
                         </p>
                         
-                        <div className="grid grid-cols-1 gap-2 mt-2">
-                          {domain.strandDetails.map((strand, idx) => (
-                            <div key={idx} className="border-t pt-2">
+                        <div className="space-y-3 mt-4 bg-white border-2 border-black p-3 rounded-md">
+                          {domain.strandDetails.map((strand, strandIdx) => (
+                            <div key={strandIdx} className={`border-b-2 border-black pb-2 ${strandIdx === domain.strandDetails.length - 1 ? 'border-b-0' : ''}`}>
                               <div className="flex justify-between items-start">
-                                <span className="text-xs text-slate-800">{strand.strandName}</span>
+                                <span className="text-xs font-bold">{strand.strandName}</span>
                                 <div className="text-right">
-                                  <span className="font-medium text-xs">{strand.score}/5</span>
-                                  <p className="text-xs text-slate-500">
+                                  <span className="font-black text-sm">{strand.score}/5</span>
+                                  <p className="text-xs font-medium">
                                     Expected: {strand.expectedScore.toFixed(1)}
                                   </p>
                                 </div>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              
+                              <div className="w-full bg-gray-200 border border-black rounded-full h-4 mt-2 overflow-hidden">
                                 <div 
-                                  className="bg-blue-600 h-1.5 rounded-full" 
+                                  className="bg-blue-600 h-full" 
                                   style={{ width: `${strand.probability * 100}%` }}
                                 ></div>
                               </div>
-                              <p className="text-xs text-slate-500 mt-1">
+                              <p className="text-xs font-medium mt-1">
                                 Probability: {(strand.probability * 100).toFixed(1)}%
                               </p>
                             </div>
@@ -935,94 +1076,110 @@ const PPSSHRaschAssessment = () => {
                 </div>
               </TabsContent>
               
-              <TabsContent value="rasch">
-                <div className="space-y-4">
-                  <div className="bg-blue-50 p-3 md:p-4 rounded-lg mb-4">
-                    <h3 className="font-medium text-sm mb-2">Psychometric Properties</h3>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <p className="text-slate-600">Person Reliability:</p>
-                        <p className="font-medium">{(reliabilityStats.personReliability * 100).toFixed(1)}%</p>
+              <TabsContent value="rasch" className="p-5">
+                <div className="space-y-6">
+                  <div className="bg-green-100 border-3 border-black p-4 rounded-md mb-4 rotate-1">
+                    <h3 className="font-black text-lg mb-3">Psychometric Properties</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white border-2 border-black p-3 rounded-md -rotate-2">
+                        <p className="text-xs font-bold">Consistency Score:</p>
+                        <p className="font-black text-lg">{(reliabilityStats.personReliability * 100).toFixed(1)}%</p>
                       </div>
-                      <div>
-                        <p className="text-slate-600">Separation Index:</p>
-                        <p className="font-medium">{reliabilityStats.separationIndex.toFixed(2)}</p>
+                      <div className="bg-white border-2 border-black p-3 rounded-md rotate-2">
+                        <p className="text-xs font-bold">Differentiation Index:</p>
+                        <p className="font-black text-lg">{reliabilityStats.separationIndex.toFixed(2)}</p>
                       </div>
-                      <div>
-                        <p className="text-slate-600">Person Variance:</p>
-                        <p className="font-medium">{reliabilityStats.personVariance.toFixed(3)}</p>
+                      <div className="bg-white border-2 border-black p-3 rounded-md rotate-1">
+                        <p className="text-xs font-bold">Performance Variance:</p>
+                        <p className="font-black text-lg">{reliabilityStats.personVariance.toFixed(3)}</p>
                       </div>
-                      <div>
-                        <p className="text-slate-600">Error Variance:</p>
-                        <p className="font-medium">{reliabilityStats.errorVariance.toFixed(3)}</p>
+                      <div className="bg-white border-2 border-black p-3 rounded-md -rotate-1">
+                        <p className="text-xs font-bold">Measurement Precision:</p>
+                        <p className="font-black text-lg">{(1/reliabilityStats.errorVariance).toFixed(1)}</p>
                       </div>
                     </div>
                   </div>
                   
-                  <h3 className="font-semibold text-sm md:text-base mb-2">Wright Map (Person-Item Map)</h3>
-                  <div className="h-80 md:h-96">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart
-                        margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                      >
-                        <CartesianGrid />
-                        <XAxis 
-                          type="number" 
-                          dataKey="x" 
-                          name="Domain" 
-                          domain={[-0.5, 5.5]}
-                          tickFormatter={(value) => {
-                            if (value === 0) return "You";
-                            if (value >= 1 && value <= 5) return `D${value}`;
-                            return "";
-                          }}
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="y" 
-                          name="Logits" 
-                          domain={[-2, 3]}
-                          label={{ value: 'Logit Scale (Difficulty/Ability)', angle: -90, position: 'insideLeft', style: { fontSize: '12px' } }}
-                        />
-                        <ZAxis range={[60, 60]} />
-                        <RechartsTooltip 
-                          cursor={{ strokeDasharray: '3 3' }}
-                          formatter={(value, name, props) => {
-                            if (props.payload.name) {
-                              return [props.payload.name, "Strand"];
-                            }
-                            return [value, name];
-                          }}
-                        />
-                        <Legend />
-                        {wrightMapPersonData.map((entry, index) => (
-                          <Scatter 
-                            key={`person-${index}`}
-                            name={entry.name} 
-                            data={entry.data} 
-                            fill="#3b82f6" 
-                            shape="circle"
+                  <div>
+                <h3 className="text-lg font-black mb-3 inline-block bg-yellow-300 px-3 py-1 rotate-1 border-2 border-black">Item-Person Map</h3>
+                    <div className="h-80 border-3 border-black bg-white p-3 rounded-md">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart
+                          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            name="Domain" 
+                            domain={[-0.5, 5.5]}
+                            stroke="#000"
+                            tickFormatter={(value) => {
+                              if (value === 0) return "You";
+                              if (value >= 1 && value <= 5) return `D${value}`;
+                              return "";
+                            }}
                           />
-                        ))}
-                        {wrightMapItemData.map((entry, index) => (
-                          <Scatter 
-                            key={`item-${index}`}
-                            name={entry.name} 
-                            data={entry.data} 
-                            fill={`hsl(${index * 50}, 70%, 50%)`}
-                            shape="diamond"
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Logits" 
+                            domain={[-2, 3]}
+                            stroke="#000"
+                            label={{ 
+                              value: 'Difficulty/Ability (Logits)', 
+                              angle: -90, 
+                              position: 'insideLeft', 
+                              style: { 
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                              } 
+                            }}
                           />
-                        ))}
-                      </ScatterChart>
-                    </ResponsiveContainer>
+                          <ZAxis range={[60, 60]} />
+                          <RechartsTooltip 
+                            cursor={{ strokeDasharray: '3 3' }}
+                            formatter={(value, name, props) => {
+                              if (props.payload.name) {
+                                return [props.payload.name, "Strand"];
+                              }
+                              return [value, name];
+                            }}
+                            contentStyle={{ border: '3px solid black', borderRadius: '4px', padding: '8px' }}
+                          />
+                          <Legend />
+                          {wrightMapPersonData.map((entry, index) => (
+                            <Scatter 
+                              key={`person-${index}`}
+                              name={entry.name} 
+                              data={entry.data} 
+                              fill="#000" 
+                              shape="circle"
+                              stroke="#000"
+                              strokeWidth={2}
+                            />
+                          ))}
+                          {wrightMapItemData.map((entry, index) => (
+                            <Scatter 
+                              key={`item-${index}`}
+                              name={entry.name} 
+                              data={entry.data} 
+                              fill={`hsl(${index * 50}, 70%, 50%)`}
+                              shape="diamond"
+                              stroke="#000"
+                              strokeWidth={1}
+                            />
+                          ))}
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                   
-                  <div className="bg-slate-100 p-3 rounded-lg mt-4">
-                    <p className="text-xs text-slate-700">
-                      <span className="font-medium">How to read this chart: </span>
-                      The Wright Map shows your overall ability (blue circle) in relation to the difficulty of each strand (diamonds). 
-                      Items at the same level as your ability have a 50% probability of success. 
-                      Items lower than your ability are easier for you, while those higher are more challenging.
+                  <div className="bg-black text-white p-4 border-3 border-white rounded-md -rotate-1 mt-4">
+                    <p className="text-sm font-medium">
+                      <span className="font-black">How to read this chart: </span>
+                      The Item-Person Map shows your ability (blue circle) in relation to each strand (diamonds). 
+                      Items at your ability level have 50% probability of success. Items lower are easier for you, higher are more challenging.
                     </p>
                   </div>
                 </div>
@@ -1030,14 +1187,17 @@ const PPSSHRaschAssessment = () => {
             </Tabs>
           </CardContent>
           
-          <CardFooter className="flex flex-col sm:flex-row justify-center gap-2 md:gap-4 p-4 md:p-6 bg-slate-50">
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={resetAssessment}>
+          <CardFooter className="flex flex-col sm:flex-row justify-center gap-3 p-5 bg-gray-100 border-t-4 border-black">
+            <Button 
+              variant="outline" 
+              className="font-bold border-3 border-black bg-white hover:bg-gray-100"
+              onClick={resetAssessment}
+            >
               Retake Assessment
             </Button>
             <Button 
               onClick={() => window.print()} 
-              className="bg-blue-600 hover:bg-blue-700 text-xs md:text-sm"
-              size="sm"
+              className="font-bold border-3 border-black bg-blue-500 hover:bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               Print Results
             </Button>
@@ -1049,7 +1209,7 @@ const PPSSHRaschAssessment = () => {
 
   // Main render based on current page
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-50 py-8">
       {currentPage === "landing" && renderLandingPage()}
       {currentPage === "assessment" && renderAssessmentPage()}
       {currentPage === "results" && renderResultsPage()}
