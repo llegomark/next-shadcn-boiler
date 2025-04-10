@@ -875,9 +875,12 @@ const PPSSHRaschAssessment = () => {
         <CardContent className="p-6 bg-white">
           <div className="space-y-6">
             <div className="rounded-md bg-blue-100 border-4 border-blue-500 p-4 mb-6">
-              <h2 className="text-xl font-black text-blue-800 mb-2">Welcome to the Advanced PPSSH Assessment</h2>
+              <h2 className="text-xl font-black text-blue-800 mb-2">PPSSH: DepEd's Framework for School Leadership</h2>
+              <p className="text-black font-medium mb-3">
+                The Philippine Professional Standards for School Heads (PPSSH) is a nationally recognized framework established by the Department of Education (DepEd) that defines what school heads should know, be able to do, and value across distinct career stages.
+              </p>
               <p className="text-black font-medium">
-                This assessment tool applies rigorous Rating Scale Model (RSM) psychometrics to evaluate your leadership competencies based on the Philippine Professional Standards for School Heads (PPSSH).
+                It serves as a public statement of professional accountability and guides the development of school leaders from aspiring to expert levels, placing learners at the center of all leadership practices.
               </p>
             </div>
 
@@ -893,18 +896,49 @@ const PPSSHRaschAssessment = () => {
               </div>
             </div>
 
+            <div className="border-4 border-red-300 bg-yellow-50 p-4 rounded-md mb-6 -rotate-1">
+              <div className="flex gap-3 items-start">
+                <AlertTitle className="h-6 w-6 flex-shrink-0 mt-1" strokeWidth={2.5} />
+                <div>
+                  <h3 className="text-lg font-black mb-1 text-red-800">Disclaimer</h3>
+                  <p className="text-black font-medium text-sm">
+                    This assessment tool is for self-evaluation purposes only and is not officially affiliated with, endorsed by, or connected to the Department of Education (DepEd). Results should be interpreted as guidance for professional development and not as an official evaluation of competency. The official PPSSH framework is owned and regulated by DepEd.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <h3 className="text-lg font-black mb-3 inline-block bg-green-300 px-3 py-1 -rotate-1 border-2 border-black">The Five Domains of PPSSH:</h3>
-              <ul className="space-y-4 mb-6">
+              <p className="text-sm font-medium mb-4 bg-gray-100 p-3 border-2 border-black rotate-1">
+                These domains represent the broad conceptual spheres of leadership practices for all school heads, emphasizing the central role of improving learner achievement by placing learners at the center of the framework.
+              </p>
+              <ul className="space-y-5 mb-6">
                 {domains.map((domain, index) => (
-                  <li key={domain.id} className="flex items-start gap-3">
-                    <div className={`h-8 w-8 rounded-md border-2 border-black flex items-center justify-center text-lg font-black ${['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][index]
-                      }`}>
+                  <li key={domain.id} className={`flex items-start gap-3 p-3 border-3 border-black rounded-md ${['bg-red-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100'][index]} ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
+                    <div className={`h-10 w-10 rounded-md border-2 border-black flex items-center justify-center text-lg font-black ${['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-orange-400'][index]}`}>
                       {domain.id.replace('domain', '')}
                     </div>
                     <div className="flex-1">
                       <span className="font-bold text-base">{domain.name}</span>
                       <p className="text-sm mt-1">{domain.description}</p>
+                      <div className="mt-2 bg-white p-2 border-2 border-black rounded-md">
+                        {index === 0 && (
+                          <p className="text-xs">Focuses on setting the direction, vision, and mission of the school while ensuring strategic planning, policy implementation, and research-based innovation.</p>
+                        )}
+                        {index === 1 && (
+                          <p className="text-xs">Concentrates on managing school systems, finances, facilities, staff, and safety procedures to establish a culture of transparency and accountability.</p>
+                        )}
+                        {index === 2 && (
+                          <p className="text-xs">Emphasizes instructional leadership through curriculum implementation, teaching standards, performance feedback, and learning assessment.</p>
+                        )}
+                        {index === 3 && (
+                          <p className="text-xs">Centers on personal growth and developing others through reflection, networking, performance management, and professional development programs.</p>
+                        )}
+                        {index === 4 && (
+                          <p className="text-xs">Highlights relationship-building with stakeholders, inclusive practices, effective communication, and community engagement for school improvement.</p>
+                        )}
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -939,6 +973,13 @@ const PPSSHRaschAssessment = () => {
                   <span>Enhanced statistical precision</span>
                 </li>
               </ul>
+            </div>
+
+            <div className="bg-yellow-100 border-3 border-black p-4 rounded-md -rotate-1">
+              <h3 className="text-lg font-black mb-2">Why PPSSH Matters:</h3>
+              <p className="text-sm font-medium">
+                The PPSSH framework serves as the foundation for recruitment, performance appraisal, rewards and recognition, talent management, and professional development of school heads. It aligns with the National Qualifying Examination for School Heads (NQESH) and guides career progression from aspiring to expert school leaders.
+              </p>
             </div>
           </div>
         </CardContent>
