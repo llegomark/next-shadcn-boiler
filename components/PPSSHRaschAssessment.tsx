@@ -864,8 +864,8 @@ const PPSSHRaschAssessment = () => {
       <Card className="w-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
         <CardHeader className="bg-yellow-400 text-black border-b-4 border-black p-6">
           <div className="flex flex-col gap-2">
-            <CardTitle className="text-2xl sm:text-3xl font-black leading-tight">Philippine Professional Standards for School Heads</CardTitle>
-            <CardDescription className="text-black font-medium text-base">Leadership Assessment with Enhanced Psychometric Algorithm</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl font-black leading-tight">Philippine Professional Standards for School Heads (PPSSH)</CardTitle>
+            <CardDescription className="text-black font-medium text-base">Leadership Assessment Tool for Aspiring School Heads</CardDescription>
             <div className="text-black text-sm font-bold mt-2 border-t-2 border-black pt-2">
               by Mark Anthony Llego | <a href="https://nqesh.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">nqesh.com</a>
             </div>
@@ -963,7 +963,7 @@ const PPSSHRaschAssessment = () => {
           <div className="flex flex-col gap-3">
             <CardTitle className="text-xl font-black">PPSSH Leadership Assessment</CardTitle>
             <CardDescription className="text-black font-medium">
-              Rate yourself on each indicator based on your current knowledge and practice
+              Rate yourself on each indicator based on your current knowledge and practice. Be honest and reflective. Your responses will help identify your strengths and areas for growth.
             </CardDescription>
 
             <div className="mt-2">
