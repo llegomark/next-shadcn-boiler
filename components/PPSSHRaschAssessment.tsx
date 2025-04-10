@@ -1023,28 +1023,35 @@ const PPSSHRaschAssessment = () => {
         </CardHeader>
 
         <CardContent className="p-0">
-          <Tabs defaultValue="domain1" value={activeDomain} onValueChange={setActiveDomain} className="w-full">
-            <TabsList className="w-full grid grid-cols-5 rounded-none border-b-4 border-black bg-gray-100 h-16">
-              {domains.map((domain, index) => {
-                let bgColor = "bg-blue-400";
+        <Tabs defaultValue="domain1" value={activeDomain} onValueChange={setActiveDomain} className="w-full">
+  <TabsList className="w-full grid grid-cols-5 rounded-none border-b-4 border-black bg-gray-100 h-16">
+    {domains.map((domain, index) => {
+      // Create the appropriate className based on domain id
+      let activeClassName = "";
+      
+      if (domain.id === "domain1") {
+        activeClassName = "data-[state=active]:bg-red-400";
+      } else if (domain.id === "domain2") {
+        activeClassName = "data-[state=active]:bg-blue-400";
+      } else if (domain.id === "domain3") {
+        activeClassName = "data-[state=active]:bg-green-400";
+      } else if (domain.id === "domain4") {
+        activeClassName = "data-[state=active]:bg-purple-400";
+      } else if (domain.id === "domain5") {
+        activeClassName = "data-[state=active]:bg-orange-400";
+      }
 
-                if (domain.id === "domain1") bgColor = "bg-red-400";
-                else if (domain.id === "domain2") bgColor = "bg-blue-400";
-                else if (domain.id === "domain3") bgColor = "bg-green-400";
-                else if (domain.id === "domain4") bgColor = "bg-purple-400";
-                else if (domain.id === "domain5") bgColor = "bg-orange-400";
-
-                return (
-                  <TabsTrigger
-                    key={domain.id}
-                    value={domain.id}
-                    className={`w-full text-sm sm:text-base font-bold data-[state=active]:${bgColor} data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:text-black`}
-                  >
-                    {domain.name.split(' ')[0]}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+      return (
+        <TabsTrigger
+          key={domain.id}
+          value={domain.id}
+          className={`w-full text-sm sm:text-base font-bold ${activeClassName} data-[state=active]:border-4 data-[state=active]:border-black data-[state=active]:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] data-[state=active]:text-black`}
+        >
+          {domain.name.split(' ')[0]}
+        </TabsTrigger>
+      );
+    })}
+  </TabsList>
 
             {domains.map((domain, domainIndex) => (
               <TabsContent key={domain.id} value={domain.id} className="p-0">
