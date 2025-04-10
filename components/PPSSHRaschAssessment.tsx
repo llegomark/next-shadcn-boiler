@@ -1353,20 +1353,54 @@ const PPSSHRaschAssessment = () => {
     );
   };
 
-  // Render domain measures with error bars
+  // Render domain measures with error bars - completely rewritten to avoid ErrorBar component
   const renderDomainMeasuresWithErrors = () => {
     if (!raschMeasures || !results) return null;
 
-    const data = raschMeasures.domainMeasures.map((domain, index) => ({
+    // Format data to explicitly include confidence intervals as separate data points
+    const domainNames = raschMeasures.domainMeasures.map(domain => domain.name.split(' ')[0]);
+
+    // Create a separate data structure for the bar chart
+    const barData = raschMeasures.domainMeasures.map((domain, index) => ({
       name: domain.name.split(' ')[0],
-      logit: parseFloat(domain.logit.toFixed(2)),
-      error: [
-        parseFloat(domain.ciLower.toFixed(2)),
-        parseFloat(domain.ciUpper.toFixed(2))
-      ],
-      // Add a unique identifier for each data point
-      id: `domain-${index}`
+      logit: parseFloat(domain.logit.toFixed(2))
     }));
+
+    // Create separate data arrays for the error bars to avoid key conflicts
+    const errorLineData = [];
+    const errorCapData = [];
+
+    raschMeasures.domainMeasures.forEach((domain, index) => {
+      // Vertical error line (from lower to upper CI)
+      errorLineData.push({
+        id: `error-line-${index}`,
+        dataKey: "errorLine",
+        data: [
+          { x: index, y: parseFloat(domain.ciLower.toFixed(2)) },
+          { x: index, y: parseFloat(domain.ciUpper.toFixed(2)) }
+        ]
+      });
+
+      // Top cap of error bar
+      errorCapData.push({
+        id: `error-cap-top-${index}`,
+        dataKey: "errorCapTop",
+        data: [
+          { x: index - 0.15, y: parseFloat(domain.ciUpper.toFixed(2)) },
+          { x: index + 0.15, y: parseFloat(domain.ciUpper.toFixed(2)) }
+        ]
+      });
+
+      // Bottom cap of error bar
+      errorCapData.push({
+        id: `error-cap-bottom-${index}`,
+        dataKey: "errorCapBottom",
+        data: [
+          { x: index - 0.15, y: parseFloat(domain.ciLower.toFixed(2)) },
+          { x: index + 0.15, y: parseFloat(domain.ciLower.toFixed(2)) }
+        ]
+      });
+    });
 
     return (
       <Card className="border-3 border-black p-4 rounded-md bg-white">
@@ -1380,11 +1414,15 @@ const PPSSHRaschAssessment = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
-                data={data}
+                data={barData}
                 margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis
+                  dataKey="name"
+                  type="category"
+                  interval={0}
+                />
                 <YAxis
                   domain={[-3, 3]}
                   label={{
@@ -1395,32 +1433,58 @@ const PPSSHRaschAssessment = () => {
                   }}
                 />
                 <RechartsTooltip
-                  formatter={(value, name) => {
+                  formatter={(value, name, props) => {
                     if (name === 'logit') return [`${value} logits`, 'Measure'];
                     return [value, name];
                   }}
                 />
                 <Legend />
-                {/* Render individual bars instead of one Bar with ErrorBar as child */}
-                {data.map((entry, index) => (
-                  <Bar
-                    key={`bar-${entry.id}`}
-                    dataKey="logit"
-                    fill="#2563eb"
+
+                {/* Bar chart for logit measures */}
+                <Bar
+                  dataKey="logit"
+                  fill="#2563eb"
+                  name="Domain Measure"
+                  stroke="#000"
+                  strokeWidth={1}
+                />
+
+                {/* Custom error lines (vertical part of error bars) */}
+                {errorLineData.map((lineData, index) => (
+                  <Line
+                    key={`line-${lineData.id}`}
+                    data={lineData.data}
+                    type="linear"
+                    dataKey="y"
+                    xAxis={<XAxis type="number" dataKey="x" />}
+                    yAxis={<YAxis type="number" dataKey="y" />}
+                    dot={false}
+                    activeDot={false}
                     stroke="#000"
-                    strokeWidth={1}
-                    name="Domain Measure"
-                    data={[entry]} // Only provide this single data point
-                  >
-                    <ErrorBar
-                      key={`errorbar-${entry.id}`}
-                      dataKey="error"
-                      width={4}
-                      strokeWidth={2}
-                      stroke="#000"
-                    />
-                  </Bar>
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                    legendType="none"
+                  />
                 ))}
+
+                {/* Custom error caps (horizontal parts at top and bottom of error bars) */}
+                {errorCapData.map((capData, index) => (
+                  <Line
+                    key={`cap-${capData.id}`}
+                    data={capData.data}
+                    type="linear"
+                    dataKey="y"
+                    xAxis={<XAxis type="number" dataKey="x" />}
+                    yAxis={<YAxis type="number" dataKey="y" />}
+                    dot={false}
+                    activeDot={false}
+                    stroke="#000"
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                    legendType="none"
+                  />
+                ))}
+
                 {/* Reference line for overall ability */}
                 <ReferenceLine
                   y={results.overallLogitMeasure}
